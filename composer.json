@@ -1,0 +1,16 @@
+{
+    "name": "insaf/red.loc",
+    "type": "project",
+    "authors": [
+        {
+            "name": "Insaf",
+            "email": "iburanguloff@ya.ru"
+        }
+    ],
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "App\\": "app"
+        }
+    }
+}
