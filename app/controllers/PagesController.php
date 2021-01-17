@@ -2,12 +2,21 @@
 
 namespace App\controllers;
 
+use App\models\PagesModel;
+
 class PagesController
 {
+	private $model;
+
+	public function __construct()
+	{
+		$this->model = new PagesModel('pages');
+	}
 
 	public function index()
 	{
-		echo 'Home page';
+		$res = $this->model->find('name', 'home');
+		var_dump($res);
 	}
 
 	public function about()

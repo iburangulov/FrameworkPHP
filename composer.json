@@ -7,7 +7,9 @@
             "email": "iburanguloff@ya.ru"
         }
     ],
-    "require": {},
+    "require": {
+      "ext-pdo": "*"
+    },
     "autoload": {
         "psr-4": {
             "App\\": "app"
