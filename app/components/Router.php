@@ -10,6 +10,9 @@ class Router
 	private $requestData;//Данные запроса
 	private $routes;//Список маршрутов для метода
 	private $internalRoute;//Полный внутренний маршрут
+	private $routeName;//Имя маршрута
+	private $routeProtectors;//Список защитников маршрута
+	private $deniedUrl;//Адрес отправки при отказе доступа
 
 	public function __construct()
 	{
@@ -35,7 +38,20 @@ class Router
 	public function run(): void
 	{
 		$this->internalRoute = $this->routeSearch();
-		echo $this->internalRoute;
+		if (Protector::check($this->routeProtectors)) $this->call();
+		else self::redirect($this->deniedUrl);
+	}
+
+	/**
+	 *Передача данных и управления контроллеру
+	 */
+	private function call():void
+	{
+		$data = explode('/', $this->internalRoute);
+		$controllerClass = 'App\\controllers\\' . ucfirst(array_shift($data)) . 'Controller';
+		$action = array_shift($data);
+		$controller = new $controllerClass;
+		call_user_func_array([$controller, $action], $data);
 	}
 
 	/**
@@ -48,19 +64,23 @@ class Router
 		foreach ($this->routes as $routeKey => $routeValue) {
 			$routeKey = trim($routeKey, '/');
 			if (preg_match('~^' . $routeKey . '$~', $this->url)) {
+				$this->routeName = isset($routeValue['name']) ? $routeValue['name'] : null;
+				if (isset($routeValue['protectors']))
+				{
+					$this->routeProtectors = is_array($routeValue['protectors']) ? $routeValue['protectors'] : array($routeValue['protectors']);
+				} else $this->routeProtectors = null;
+				$this->deniedUrl = isset($routeValue['denied']) ? $routeValue['denied'] : '';
 				return preg_replace('~^' . $routeKey . '$~', $routeValue['route'], $this->url);
 			}
 		}
 	}
-
 
 	/**
 	 * @param string $path
 	 * @param array $params
 	 * Установка GET маршрута
 	 */
-	public
-	static function get(string $path, array $params): void
+	public static function get(string $path, array $params): void
 	{
 		self::$rotesList['get'][$path] = $params;
 	}
@@ -70,8 +90,7 @@ class Router
 	 * @param array $params
 	 * Установка POST маршрута
 	 */
-	public
-	static function post(string $path, array $params): void
+	public static function post(string $path, array $params): void
 	{
 		self::$rotesList['post'][$path] = $params;
 	}
@@ -81,11 +100,29 @@ class Router
 	 * @param array $params
 	 * Установка GET и POST маршрута
 	 */
-	public
-	static function any(string $path, array $params): void
+	public static function any(string $path, array $params): void
 	{
 		self::get($path, $params);
 		self::post($path, $params);
+	}
+
+	/**
+	 * @param string $url
+	 * @return string
+	 * Возвращает полный адрес
+	 */
+	public static function route(string $url): string
+	{
+		return ((!empty($_SERVER['HTTPS'])) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . '/' . trim($url, '/');
+	}
+
+	/**
+	 * @param string $url
+	 * Редирект по адресу
+	 */
+	public static function redirect(string $url): void
+	{
+		header('Location: ' . self::route($url));
 	}
 }
 
@@ -126,30 +163,3 @@ class Router
 //		call_user_func_array([$controller, $this->action], $this->data); //Вызов метода управляющего контроллера и передача ему данных
 //	}
 //
-//	/**
-//	 * @param string $url
-//	 * @return string
-//	 * Возвращает полный адрес
-//	 */
-//	static function route(string $url): string
-//	{
-//		return ((!empty($_SERVER['HTTPS'])) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . '/' . trim($url, '/');
-//	}
-//
-//	/**
-//	 * @param string $url
-//	 * Редирект по адресу
-//	 */
-//	static function redirect(string $url): void
-//	{
-//		header('Location: ' . self::route($url));
-//	}
-//
-//	/**
-//	 *Редирект назад
-//	 */
-//	static function routeBack(): void
-//	{
-//		self::redirect($_SESSION['prev_page']);
-//	}
-//}
